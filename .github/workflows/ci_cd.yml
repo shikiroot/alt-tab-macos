@@ -31,7 +31,7 @@ jobs:
           echo "$P12_CERTIFICATE" | base64 --decode > /tmp/codesign.p12
           security create-keychain -p runner /tmp/build.keychain
           security unlock-keychain -p runner /tmp/build.keychain
-          security import /tmp/codesign.p12 -k /tmp/build.keychain -P 123456 -T /usr/bin/codesign
+          security import /tmp/codesign.p12 -k /tmp/build.keychain -P shiki -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -k runner /tmp/build.keychain
           security list-keychains -d user -s /tmp/build.keychain login.keychain-db
           echo "CODE_SIGN_IDENTITY=AltTab Self-Signed" >> $GITHUB_ENV
