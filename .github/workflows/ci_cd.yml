@@ -23,6 +23,19 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_26.0.1.app/Contents/Developer
 
+      - name: Import certificate
+        if: env.P12_CERTIFICATE != ''
+        env:
+          P12_CERTIFICATE: ${{ secrets.P12_CERTIFICATE }}
+        run: |
+          echo "$P12_CERTIFICATE" | base64 --decode > /tmp/codesign.p12
+          security create-keychain -p runner /tmp/build.keychain
+          security unlock-keychain -p runner /tmp/build.keychain
+          security import /tmp/codesign.p12 -k /tmp/build.keychain -P 123456 -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -k runner /tmp/build.keychain
+          security list-keychains -d user -s /tmp/build.keychain login.keychain-db
+          echo "CODE_SIGN_IDENTITY=AltTab Self-Signed" >> $GITHUB_ENV
+
       - name: Set version
         run: |
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
@@ -39,7 +52,7 @@ jobs:
           cat > config/local.xcconfig <<EOF
           CURRENT_PROJECT_VERSION = $(cat VERSION.txt)
           APPCENTER_SECRET =
-          CODE_SIGN_IDENTITY = -
+          CODE_SIGN_IDENTITY = ${CODE_SIGN_IDENTITY:--}
           EOF
 
       - run: scripts/build_app.sh
